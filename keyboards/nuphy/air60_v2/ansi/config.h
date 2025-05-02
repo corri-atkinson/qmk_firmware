@@ -17,6 +17,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#define TAPPING_TOGGLE              2
+#define ONESHOT_TAP_TOGGLE          2
+#define HOLD_ON_OTHER_KEY_PRESS
+//#define PERMISSIVE_HOLD       //If the HOLD_ON_OTHER_KEY_PRESS doesn't work
+
 #define TAP_CODE_DELAY              8
 #define DYNAMIC_KEYMAP_MACRO_DELAY  8
 #define EECONFIG_USER_DATA_SIZE     8
@@ -70,7 +75,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define DRIVER_2_LED_TOTAL         (16 + 10)
 #define RGB_MATRIX_LED_COUNT       (DRIVER_1_LED_TOTAL + DRIVER_2_LED_TOTAL)
 
-#define RGB_MATRIX_DEFAULT_MODE    RGB_MATRIX_CYCLE_LEFT_RIGHT  // Sets the default mode, if none has been set
+#define RGB_MATRIX_DEFAULT_MODE    RGB_MATRIX_RAINBOW_MOVING_CHEVRON    // Sets the default mode, if none has been set
 #define RGB_DISABLE_WHEN_USB_SUSPENDED                          // turn off effects when suspended
 
 #define RGB_MATRIX_FRAMEBUFFER_EFFECTS

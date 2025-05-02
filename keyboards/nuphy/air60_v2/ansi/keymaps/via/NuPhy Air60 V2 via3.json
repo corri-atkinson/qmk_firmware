@@ -193,6 +193,46 @@
     {
 		"name": "Tilde",
 		"title": "SHIFT+` = ~"
+	},
+    {
+		"name": "Bat\nNum",
+		"title": "Battery Number"
+	},
+    {
+		"name": "Clear\nMods",
+		"title": "Clear Modifiers"
+	},
+    {
+		"name": "RGB\nHeatmap",
+		"title": "RGB Heatmap"
+	},
+    {
+		"name": "RGB\nGRD_LR",
+		"title": "RGB Gradient Left/Right"
+	},
+	{
+		"name": "RGB\nGRD_UD",
+		"title": "RGB Gradient Up/Down"
+	},
+	{
+		"name": "RGB\nSplash",
+		"title": "RGB Splash"
+	},
+	{
+		"name": "RGB\nRed",
+		"title": "RGB Solid Red"
+	},
+	{
+		"name": "RGB\nGreen",
+		"title": "RGB Solid Green"
+	},
+	{
+		"name": "RGB\nBlue",
+		"title": "RGB Solid Blue"
+	},
+	{
+		"name": "Wiggle",
+		"title": "Wiggle"
 	}
 ]
 }

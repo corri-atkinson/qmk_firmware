@@ -592,45 +592,53 @@ void rf_led_show(void)
     set_left_rgb(r_temp, g_temp, b_temp);
 }
 
+void turn_off_unless_active_battery_indicator(uint8_t bat_percent, int ledIndex, uint8_t r, uint8_t g, uint8_t b) {
+    if (bat_percent >= (ledIndex * 10)) { 
+        rgb_matrix_set_color(ledIndex, r, g, b);
+    }
+    else {
+        rgb_matrix_set_color(ledIndex, 0x00, 0x00, 0x00);
+    }
+}
 
-/**
- * @brief  bat_num_led.
- */
 void bat_num_led(uint8_t bat_percent)
 {
     uint8_t r, g, b;
 
     // set color
-    if (bat_percent <= 15) {
-        r = 0xff; g = 0x00; b = 0x00;
+    if (bat_percent <= 25) {
+        r=0xFF; g=0x00; b=0x00;   //Red
     }
-    else if (bat_percent <= 50) {
-        r = 0xff; g = 0x40; b = 0x00;
+    else if (bat_percent <= 50) {       
+        r=0xFF; g=0x40; b=0x00;   //Yellow
     }
-    else if (bat_percent <= 80) {
-        r = 0xff; g = 0xff; b = 0x00;
+    else if (bat_percent <= 75) {
+        r=0x00; g=0x00; b=0xFF;   //Blue
     }
     else {
-        r = 0x00; g = 0xff; b = 0x00;
+        r=0x00; g=0xff; b=0x00;   //Green
+    }
+
+    if (bat_percent < 10) {
+        rgb_matrix_set_color(0, r, g, b);
+    }
+    else {
+        rgb_matrix_set_color(0, 0x00, 0x00, 0x00);
     }
 
     // set percent
-    if (bat_percent >= 1) rgb_matrix_set_color(29, r, g, b);
-    if (bat_percent > 10) rgb_matrix_set_color(28, r, g, b);
-    if (bat_percent > 20) rgb_matrix_set_color(27, r, g, b);
-    if (bat_percent > 30) rgb_matrix_set_color(26, r, g, b);
-    if (bat_percent > 40) rgb_matrix_set_color(25, r, g, b);
-    if (bat_percent > 50) rgb_matrix_set_color(24, r, g, b);
-    if (bat_percent > 60) rgb_matrix_set_color(23, r, g, b);
-    if (bat_percent > 70) rgb_matrix_set_color(22, r, g, b);
-    if (bat_percent > 80) rgb_matrix_set_color(21, r, g, b);
-    if (bat_percent > 90) rgb_matrix_set_color(20, r, g, b);
+    for (int i=1; i<=10; i++) {
+        turn_off_unless_active_battery_indicator(bat_percent, i, r, g, b);
+    }
+    for (int i=11; i<SIDE_INDEX; i++) {
+        rgb_matrix_set_color(i, 0x00, 0x00, 0x00);
+    }
 }
 
 void num_led_show(void)
 {
-    static uint8_t num_bat_temp         = 0;
-    num_bat_temp         = dev_info.rf_baterry;
+    static uint8_t num_bat_temp = 0;
+    num_bat_temp = dev_info.rf_baterry;
     bat_num_led(num_bat_temp);
 }
 
@@ -639,7 +647,6 @@ void bat_led_close(void)
     for(int i=20; i<=29; i++) {
         rgb_matrix_set_color(i,0,0,0);
     }
-
 }
 
 /**

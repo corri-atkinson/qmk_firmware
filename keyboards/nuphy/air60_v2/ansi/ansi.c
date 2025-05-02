@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ansi.h"
 #include "usb_main.h"
+#include "print.h"
 
 user_config_t user_config;
 DEV_INFO_STRUCT dev_info =
@@ -90,6 +91,32 @@ extern void light_level_control(uint8_t brighten);
 extern void side_colour_control(uint8_t dir);
 extern void side_mode_control(uint8_t dir);
 
+const uint8_t side_led_index = 64;
+
+//Modifiers
+bool f_shift_on         = 0;
+bool f_ctrl_on          = 0;
+bool f_win_on           = 0;
+bool f_alt_on           = 0;
+bool f_shift_lock_on    = 0;
+bool f_ctrl_lock_on     = 0;
+bool f_win_lock_on      = 0;
+bool f_alt_lock_on      = 0;
+//const is31_led PROGMEM g_is31_leds[] (keymap.c)
+const uint8_t tab_led_index         = 14; //Tab
+const uint8_t caps_led_index        = 28; //Caps
+const uint8_t lshift_led_index      = 41; //L_Shift
+const uint8_t rshift_led_index      = 52; //R_Shift
+const uint8_t del_led_index         = 54; //Del
+const uint8_t ctrl_led_index        = 55; //Ctrl
+const uint8_t win_led_index         = 56; //Win
+const uint8_t alt_led_index         = 57; //Alt
+const uint8_t opt_led_index         = 59;
+const uint8_t cmd_led_index         = 60;
+static bool wiggle_trigger          = false;
+static uint32_t matrix_scan_timer   = 0;
+
+const uint8_t modifier_leds[9]= {0, tab_led_index, caps_led_index, lshift_led_index, ctrl_led_index, win_led_index, alt_led_index, opt_led_index, cmd_led_index};
 
 /**
  * @brief  gpio initial.
@@ -644,7 +671,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
                 unregister_code(KC_GRV);
             }
             return false;
-
         case BAT_NUM:
             if (record->event.pressed) {
                 f_bat_num_show = 1;
@@ -652,12 +678,62 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
                 f_bat_num_show = 0;
             }
             return false;
-
+        case RGB_HEAT_MAP:  //C:\dev\qmk_firmware\docs\feature_rgb_matrix.md
+            if (record->event.pressed) {
+                rgb_matrix_mode(RGB_MATRIX_TYPING_HEATMAP);
+            }
+            return false;
+        case RGB_GRD_LEFT_RIGHT:
+            if (record->event.pressed) {
+                rgb_matrix_mode(RGB_MATRIX_GRADIENT_LEFT_RIGHT);
+            }
+            return false;
+        case RGB_GRD_UP_DOWN:
+            if (record->event.pressed) {
+                rgb_matrix_mode(RGB_MATRIX_GRADIENT_UP_DOWN);
+            }
+            return false;
+        case RGB_SPLASH:
+            if (record->event.pressed) {
+                rgb_matrix_mode(RGB_MATRIX_SPLASH);
+            }
+            return false;
+        case CLEAR_MODS:
+            if (record->event.pressed) {
+                m_break_all_key();
+                rgb_matrix_reload_from_eeprom();
+            }
+            return false;
+        case WIGGLE:
+            if (record->event.pressed) {
+                wiggle_trigger ^= true;
+            }
+            return false;
+        /*
+        case RGB_SOLID_RED:
+            if (record->event.pressed) {
+                rgb_matrix_mode(RGB_MATRIX_SOLID_COLOR);        
+                rgb_matrix_set_color_all(0xFF, 0x00, 0x00);
+            }
+            return false;
+        case RGB_SOLID_GREEN:
+            if (record->event.pressed) {
+                rgb_matrix_mode(RGB_MATRIX_SOLID_COLOR);        
+                rgb_matrix_set_color_all(0x00, 0xFF, 0x00);
+            }
+            return false;
+        case RGB_SOLID_BLUE:
+            if (record->event.pressed) {
+                rgb_matrix_mode(RGB_MATRIX_SOLID_COLOR);            
+                rgb_matrix_set_color_all(0x00, 0x00, 0xFF);
+            }
+            return false;
+        //ACTION_TAP_DANCE_LAYER_TOGGLE(kc, layer): Sends the kc keycode when tapped once, or toggles the state of layer. (this functions like the TG layer keycode).
+        */
         default:
             return true;
     }
 }
-
 
 /**
     @brief  timer process.
@@ -691,7 +767,6 @@ void timer_pro(void)
         rf_linking_time++;
 }
 
-
 /**
  * @brief  londing eeprom data.
  */
@@ -717,10 +792,6 @@ void m_londing_eeprom_data(void)
     }
 }
 
-
-/**
-   qmk keyboard post init
- */
 void keyboard_post_init_user(void)
 {
     m_gpio_init();
@@ -731,17 +802,6 @@ void keyboard_post_init_user(void)
     m_break_all_key();
     m_londing_eeprom_data();
     m_power_on_dial_sw_scan();
-}
-
-/**
-   rgb_matrix_indicators_user
- */
-bool rgb_matrix_indicators_user(void)
-{
-    if(f_bat_num_show) {
-        num_led_show();
-    }
-    return true;
 }
 
 /**
@@ -764,4 +824,149 @@ void housekeeping_task_user(void)
     m_side_led_show();
 
     Sleep_Handle();
+}
+
+void matrix_scan_user(void) { 
+    if (timer_elapsed32(matrix_scan_timer) > 30000) { // 30 seconds
+        matrix_scan_timer = timer_read32();  // resets timer
+        if (wiggle_trigger) {
+            tap_code(KC_F24); // tap if enabled
+        }
+    }
+}
+
+void toBinary(uint8_t a)
+{
+    uint8_t i;
+
+    for(i=0x80;i!=0;i>>=1)
+        uprintf("%c",(a&i)?'1':'0');
+
+    print("\n");
+}
+
+void oneshot_mods_changed_user(uint8_t mods) {
+    print("osm changed. mods: ");
+    toBinary(mods);
+
+    if (mods & MOD_MASK_SHIFT) {
+        f_shift_on = true;
+    }
+    else if (mods & MOD_MASK_CTRL) {
+        f_ctrl_on = true;
+    }
+    else if (mods & MOD_MASK_GUI) {
+        f_win_on = true;
+    }
+    else if (mods & MOD_MASK_ALT) {
+        f_alt_on = true;
+    }
+    else {
+        f_shift_on = false;
+        f_ctrl_on = false;
+        f_win_on = false;
+        f_alt_on = false;
+    }
+}
+
+void oneshot_locked_mods_changed_user(uint8_t mods) {
+    print("osm locked changed. mods: ");
+    toBinary(mods);
+
+    f_shift_lock_on = mods & MOD_MASK_SHIFT;
+    f_ctrl_lock_on = mods & MOD_MASK_CTRL;
+    f_win_lock_on = mods & MOD_MASK_GUI;
+    f_alt_lock_on = mods & MOD_MASK_ALT;
+}
+
+/**
+    @brief https://www.vandelaydesign.com/beach-color-palettes/ (White Sand)
+*/
+void turn_off_unless_active_modifier(uint8_t ledIndex) {
+    if (ledIndex == tab_led_index && wiggle_trigger) {
+        rgb_matrix_set_color(ledIndex, 0x00, 0xFF, 0xFF);
+    }
+    else if (ledIndex == lshift_led_index && (f_shift_on || f_shift_lock_on)) {
+        //rgb_matrix_set_color(ledIndex, 0x83, 0xdf, 0xe3);
+        rgb_matrix_set_color(ledIndex, 0x00, 0xFF, 0xFF);
+    }
+    else if (ledIndex == ctrl_led_index && (f_ctrl_on || f_ctrl_lock_on)) {
+        //rgb_matrix_set_color(ledIndex, 0x35, 0xB2, 0x34);  //TD Green
+        rgb_matrix_set_color(ledIndex, 0xCE, 0xC8, 0xC1);
+    }
+    else if (ledIndex == win_led_index && (f_win_on || f_win_lock_on)) {
+        rgb_matrix_set_color(ledIndex, 0xF6, 0xF0, 0xFC);
+    }
+    else if (ledIndex == alt_led_index && (f_alt_on || f_alt_lock_on)) {
+        rgb_matrix_set_color(ledIndex, 0x94, 0xA7, 0xA8);
+    }
+    else {
+        rgb_matrix_set_color(ledIndex, 0x00, 0x00, 0x00);
+    }
+}
+
+/**
+   rgb_matrix_indicators_user
+ */
+bool rgb_matrix_indicators_user(void)
+{
+    if(f_bat_num_show) {
+        num_led_show();
+    }
+    else {
+        uint8_t current_layer = get_highest_layer(layer_state);
+        switch (current_layer) {
+            case 4:
+                for (int i = 0; i < side_led_index; i++) {
+                    if (i == caps_led_index) {
+                        //rgb_matrix_set_color(i, 0x26, 0x8f, 0x8e);
+                        rgb_matrix_set_color(i, 0x00, 0xFF, 0xFF);                        
+                    }
+                    //Function Row
+                    else if (i >= 1 && i <= 12) {
+                        rgb_matrix_set_color(i, 0xFF, 0x00, 0x00);              //Maroon
+                    }
+                    //Nav Keys
+                    else if (i == 53 || (i >= 61 && i <= 63)) {
+                        rgb_matrix_set_color(i, 0xFF, 0x00, 0x00);              //Maroon
+                    }
+                    else {
+                        turn_off_unless_active_modifier(i);
+                    }
+                }
+                break;
+            //Lighting Layer
+            case 5:
+                for (int i = 0; i < 9; i++) {
+                    if (modifier_leds[i] == opt_led_index) {
+                        rgb_matrix_set_color(modifier_leds[i], 0x00, 0xFF, 0xFF);
+                    }
+                    else {
+                        turn_off_unless_active_modifier(modifier_leds[i]);
+                    }
+                }
+                break;
+            //Cmd Layer
+            case 6:
+                for (int i = 0; i < 9; i++) {
+                    if (modifier_leds[i] == cmd_led_index) {
+                        rgb_matrix_set_color(modifier_leds[i], 0x00, 0xFF, 0xFF);
+                    }
+                    else {
+                        turn_off_unless_active_modifier(modifier_leds[i]);
+                    }
+                }
+                break;
+            default:
+                //Works because it doesn't pass through here on the Caps Lock case
+                if (f_shift_on || f_shift_lock_on || f_ctrl_on || f_ctrl_lock_on || f_alt_on || f_alt_lock_on || f_win_on || f_win_lock_on || wiggle_trigger) {  
+                    for (int i = 0; i < 9; i++) {
+                        turn_off_unless_active_modifier(modifier_leds[i]);
+                    }
+                }
+            break;
+        }
+    }
+
+    return true;
 }

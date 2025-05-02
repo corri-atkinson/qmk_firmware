@@ -47,7 +47,16 @@ enum custom_keycodes {
     BAT_SHOW,
     RGB_TEST,
     SHIFT_GRV,
-    BAT_NUM
+    BAT_NUM,
+    CLEAR_MODS,
+    RGB_HEAT_MAP,
+    RGB_GRD_LEFT_RIGHT,
+    RGB_GRD_UP_DOWN,
+    RGB_SPLASH,
+    RGB_SOLID_RED,
+    RGB_SOLID_GREEN,
+    RGB_SOLID_BLUE,
+    WIGGLE
 };
 
 
